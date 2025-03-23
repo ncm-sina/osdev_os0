@@ -1,5 +1,8 @@
 
-all: build-os test-os prepare-iso
+all:
+	$(MAKE) -C ../src/kernel -f Makefile all-kernel
+
+
 
 init:
 	mkdir -p ../dist/

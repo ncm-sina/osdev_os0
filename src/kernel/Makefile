@@ -1,13 +1,33 @@
-build-os: ../dist/kernel/kernel.bin
 
-../dist/kernel/kernel.bin: ../dist/kernel/pre-kernel.o ../dist/kernel/kernel.o
-	i686-elf-gcc -T ../src/kernel/linker.ld -o $@ -ffreestanding -O2 -nostdlib $^ -lgcc
+TARGET=../../dist/kernel/kernel.bin
+
+# Find all C source files in the current directory
+SRCS = $(wildcard *.c)
+
+# Generate object files from the source files
+OBJS = $(patsubst %.c,%.o,$(SRCS))
+
+all-kernel: print-intro $(TARGET)
+
+print-intro:
+	@echo "-----------------Building Kernel------------------" 
+
+CFLAGS=  -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+LFLAGS=  -ffreestanding -O2 -nostdlib
+
+
+$(TARGET): pre-kernel.o $(OBJS)
+	@echo $(SRCS)
+	@echo $(OBJS)
+	i686-elf-gcc $(LFLAGS) -T ./linker.ld -o $@ $< $(OBJS) -lgcc
 
 all-build: ../dist/kernel/pre-kernel.o ../dist/kernel/kernel.o
 
-../dist/kernel/kernel.o: ../src/kernel/kernel.c
-	i686-elf-gcc -c $< -o $@ -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 
+%.o: %.c
+	@echo "building c files"
+	i686-elf-gcc $(CFLAGS) -c $< -o $@
 
-../dist/kernel/pre-kernel.o: ../src/kernel/pre-kernel.s
+pre-kernel.o: pre-kernel.s
 	i686-elf-as $< -o $@
+
