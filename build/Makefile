@@ -1,7 +1,7 @@
 
 all:
 	$(MAKE) -C ../src/kernel -f Makefile all-kernel
-
+	make prepare-iso
 
 
 init:

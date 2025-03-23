@@ -7,10 +7,10 @@ SRCS = $(wildcard *.c)
 # Generate object files from the source files
 OBJS = $(patsubst %.c,%.o,$(SRCS))
 
-all-kernel: print-intro $(TARGET)
-
-print-intro:
+all-kernel: 
 	@echo "-----------------Building Kernel------------------" 
+	make $(TARGET)
+
 
 CFLAGS=  -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 LFLAGS=  -ffreestanding -O2 -nostdlib
