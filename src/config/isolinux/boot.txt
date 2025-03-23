@@ -1,0 +1,5 @@
+ ☼09a☼07 - Boot A:
+ ☼09b☼07 - Boot first HDD
+ ☼09c☼07 - Boot next device
+
+ ☼091☼07 - ☼0fPC-MYOS☼07

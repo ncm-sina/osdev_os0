@@ -1,0 +1,2 @@
+boot\myos.bin
+boot\grub\grub.cfg
