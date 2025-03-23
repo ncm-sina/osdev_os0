@@ -1,4 +1,0 @@
-boot\isolinux\isolinux.bin
-boot\isolinux\ldlinux.c32
-boot\isolinux\isolinux.cfg
-boot\isolinux\boot.txt

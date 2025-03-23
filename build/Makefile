@@ -2,13 +2,21 @@
 all: build-os test-os prepare-iso
 
 prepare-iso:
-	mkdir -p ../dist/isodir/boot/isolinux
+	mkdir -p ../dist/isodir/boot/grub
+	mkdir -p ../dist/isodir/kernel
 	mkdir -p ../dist/isodir/drivers
 	mkdir -p ../dist/isodir/images
-	mkdir -p ../dist/isodir/kernel
-	
 	cp ../dist/kernel.bin ../dist/isodir/kernel/kernel.bin
-	cp ../src/config/isolinux/* ../dist/isodir/boot/isolinux -fr
+	cp ../src/config/grub/grub.cfg ../dist/isodir/boot/grub/grub.cfg	
+
+# prepare-iso-isolinux:
+# 	mkdir -p ../dist/isodir/boot/isolinux
+# 	mkdir -p ../dist/isodir/drivers
+# 	mkdir -p ../dist/isodir/images
+# 	mkdir -p ../dist/isodir/kernel
+	
+# 	cp ../dist/kernel.bin ../dist/isodir/kernel/kernel.bin
+# 	cp ../src/config/isolinux/* ../dist/isodir/boot/isolinux -fr
 
 
 test-os:
