@@ -11,7 +11,8 @@
 	#error "This code must be compiled with an x86-elf compiler"
 #endif
 
-#include "basics.h"
+#include <mconio.h>
+
 
 
 // This is our kernel's main function
@@ -19,10 +20,30 @@ void kernel_main()
 {
 	// We're here! Let's initiate the terminal and display a message to show we got here.
 	
-	// Initiate terminal
-	term_init();
+
+	mclrscr();
 
 	// Display some messages
-	term_print("Hello, World!\n");
-	term_print("Welcome to the kernel.\n");
+	mcprintf("He\033[30mllo,World!\033[0m\n");
+	mcprintf("He\033[31mllo,World!\033[0m\n");
+	mcprintf("He\033[32mllo,World!\033[0m\n");
+	mcprintf("He\033[33mllo,World!\033[0m\n");
+	mcprintf("He\033[34mllo,World!\033[0m\n");
+	mcprintf("He\033[35mllo,World!\033[0m\n");
+	mcprintf("He\033[36mllo,World!\033[0m\n");
+	mcprintf("He\033[37mllo,World!\033[0m\n");
+	mcprintf("He\033[40mllo,World!\033[0m\n");
+	mcprintf("He\033[41mllo,World!\033[0m\n");
+	mcprintf("He\033[42mllo,World!\033[0m\n");
+	mcprintf("He\033[43mllo,World!\033[0m\n");
+	mcprintf("He\033[44mllo,World!\033[0m\n");
+	mcprintf("He\033[45mllo,World!\033[0m\n");
+	mcprintf("He\033[46mllo,World!\033[0m\n");
+	mcprintf("He\033[47mllo,World!\033[0m\n");
+
+	
+
+	// // Display some messages
+	// mcprintf("Hello, World2!\n");
+	// mcprintf("Welcome to the kernel.\n");
 }

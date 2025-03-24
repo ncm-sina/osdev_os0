@@ -15,18 +15,21 @@ all-kernel:
 CFLAGS=  -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 LFLAGS=  -ffreestanding -O2 -nostdlib
 
+LINKS = $(wildcard ../include/*.o)
 
-$(TARGET): pre-kernel.o $(OBJS)
-	@echo $(SRCS)
-	@echo $(OBJS)
-	i686-elf-gcc $(LFLAGS) -T ./linker.ld -o $@ $< $(OBJS) -lgcc
+KERNEL_OBJS=\
+pre-kernel.o\
+kernel.o\
+
+$(TARGET): $(KERNEL_OBJS) $(LINKS)
+	i686-elf-gcc $(LFLAGS) -T ./linker.ld -o $@ $(KERNEL_OBJS) $(LINKS) -lgcc
 
 all-build: ../dist/kernel/pre-kernel.o ../dist/kernel/kernel.o
 
 
 %.o: %.c
 	@echo "building c files"
-	i686-elf-gcc $(CFLAGS) -c $< -o $@
+	i686-elf-gcc $(CFLAGS) -I../include -c $< -o $@
 
 pre-kernel.o: pre-kernel.s
 	i686-elf-as $< -o $@
