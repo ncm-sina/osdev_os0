@@ -1,165 +1,186 @@
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "mconio.h"
+#include "vga_basic.h"
+#include <stdarg.h>
 
-#include <mconio.h>
-#include <mcursor.h>
+// Shared buffer for printf and cprintf
+static char buffer[1024];
 
-
-struct text_info TEXT_INFO = {
-    0x0f,
-    0x0f,
-    25,
-    80,
-    0,
-    0
-};
-
-struct text_info_extended TEXT_INFO_EXT = {
-    8
-};
-
-// This is the x86's VGA textmode buffer. To display text, we write data to this memory location
-volatile uint16_t* vga_buffer = (uint16_t*)0xB8000;
-volatile size_t current_vga_index = 0;
-
-void _calculate_current_vga_index(){
-    current_vga_index = ((TEXT_INFO.screenwidth * (TEXT_INFO.cury)) + TEXT_INFO.curx); // Like before, calculate the buffer index
-}
-
-void _check_cursor_position()
-{
-    if(TEXT_INFO.curx >= TEXT_INFO.screenwidth){
-        TEXT_INFO.curx = 0;
-        TEXT_INFO.cury++;
-        _calculate_current_vga_index();
+// Helper function to convert an integer to a string (decimal only)
+static void itoa(int num, char *buf) {
+    if (num == 0) {
+        buf[0] = '0';
+        buf[1] = '\0';
+        return;
     }
-    if(TEXT_INFO.cury >= TEXT_INFO.screenheight){
-        TEXT_INFO.cury=0;
-        _calculate_current_vga_index();
+
+    int i = 0;
+    if (num < 0) {
+        buf[i++] = '-';
+        num = -num;
+    }
+
+    int temp = num;
+    int digits = 0;
+    while (temp > 0) {
+        digits++;
+        temp /= 10;
+    }
+
+    buf[i + digits] = '\0';
+    while (num > 0) {
+        buf[i + digits - 1] = (num % 10) + '0';
+        num /= 10;
+        digits--;
     }
 }
 
-void _update_cursor()
-{
-    _calculate_current_vga_index();
-    update_cursor(TEXT_INFO.curx, TEXT_INFO.cury);
-}
+// Static function to format a string with arguments into output buffer
+static void format_string(char *output, const char *fstring, va_list args) {
+    char *out = output;
+    while (*fstring) {
+        if (*fstring == '%') {
+            fstring++;
+            if (*fstring == '\0') break;
 
-void _handlebackslash()
-{
-
-}
-
-void mputch(char ch)
-{
-    vga_buffer[current_vga_index] = ((uint16_t)TEXT_INFO.attribute << 8)  | ch;
-    TEXT_INFO.curx++;
-    current_vga_index++;
-    _check_cursor_position();
-    _update_cursor();
-}
-
-void mputch_at(char ch, int x, int y)
-{
-    const size_t index = ((TEXT_INFO.screenwidth * (y)) + x); // Like before, calculate the buffer index
-    vga_buffer[index] = ((uint16_t)TEXT_INFO.attribute << 8)  | ch;
-}
-
-void mcprintf(const char *fstring)
-{
-    #define MAX_STRING_LENGTH 2000
-    char tmpbuffer[10];
-    int tmpbufferlen = 0;
-    // char tmpattribute = 0;
-    bool errorFlag = false;
-    for(int i=0; fstring[i] != 0 && i<MAX_STRING_LENGTH; i++){
-        errorFlag=false;
-        if(
-            (fstring[i]>= 32 /*&& fstring[i]<=255*/) && fstring[i] != 127 // if its printable character
-        ){
-            mputch(fstring[i]);
-            continue;
+            switch (*fstring) {
+                case '%': // Print a single '%'
+                    *out++ = '%';
+                    break;
+                case 's': { // String
+                    const char *str = va_arg(args, const char *);
+                    while (*str) *out++ = *str++;
+                    break;
+                }
+                case 'd': { // Integer
+                    int num = va_arg(args, int);
+                    char num_buf[12]; // Enough for -2147483648 + null
+                    itoa(num, num_buf);
+                    char *p = num_buf;
+                    while (*p) *out++ = *p++;
+                    break;
+                }
+                case 'c': { // Character
+                    char c = (char)va_arg(args, int); // Promoted to int in va_arg
+                    *out++ = c;
+                    break;
+                }
+                default:
+                    *out++ = '%'; // Unsupported, print '%' and the character
+                    *out++ = *fstring;
+                    break;
+            }
+            fstring++;
+        } else {
+            *out++ = *fstring++;
         }
+    }
+    *out = '\0';
+}
 
-        switch(fstring[i])
-        {
-        case '\n':
-            TEXT_INFO.curx=0;
-            TEXT_INFO.cury++;
-            _check_cursor_position();
-            _update_cursor();
-            break;
-        case '\t':
-            TEXT_INFO.curx += TEXT_INFO_EXT.tabsize - (TEXT_INFO.curx % TEXT_INFO_EXT.tabsize);
-            _check_cursor_position();
-            _update_cursor();
-            break;
-        case '\r': // ignore
-            break;
-        case '\033':
-//            _handlebackslash();
-            if( // check if its a color change CSI
-                (
-                    fstring[i+1] == '['
-                )
-                //  ||
-                // (
-                //     fstring[i+1] == '['
-                // )
-            ){
-                i+=2; // we skip 2 characters to get to numbers 1:'\033' 2:'[' -> XX;YY;ZZm
-                while( fstring[i] != 'm' && fstring[i] != 0 && !errorFlag ){ // m means end of the color change CSI
-                    tmpbufferlen = 0;
-                    while(fstring[i] != ';' && fstring[i] != 'm' && fstring[i] != 0 && !errorFlag){
-                        if(fstring[i] >= '0' && fstring[i]<='9'){
-                            tmpbuffer[tmpbufferlen]=fstring[i];
-                            tmpbufferlen++;
-                        }else{
-                            errorFlag = true;
-                        }
-                        i++;
-                    }
-                    tmpbuffer[tmpbufferlen] = 0;
-                    // TEXT_INFO.attribute = 0x21;
-                    // mcprintf(tmpbuffer);
-                    // TEXT_INFO.attribute = 0x31;
-                    // mcprintf(tmpbuffer);
-                    // TEXT_INFO.attribute = TEXT_INFO.normattr;
-                    // mcprintf(tmpbuffer);
-                    if(tmpbuffer[0] == '0'){
-                        TEXT_INFO.attribute = TEXT_INFO.normattr; // reset to default
-                    }else if(tmpbuffer[0] == '3'){
-                        TEXT_INFO.attribute = TEXT_INFO.attribute & 0xf0; // we get rid of attribute's low bit
-                        TEXT_INFO.attribute = TEXT_INFO.attribute | (tmpbuffer[1] - '0');   
-                    }else if(tmpbuffer[0] == '9'){
-                        TEXT_INFO.attribute &= 0xf0; // we get rid of attribute's low bit
-                        TEXT_INFO.attribute |= (tmpbuffer[1] - '0' + 8);
-                    }else if(tmpbuffer[0] == '4'){
-                        TEXT_INFO.attribute = TEXT_INFO.attribute & 0x0f; // we get rid of attribute's low bit
-                        TEXT_INFO.attribute = TEXT_INFO.attribute | ((tmpbuffer[1] - '0') << 4);
-                    }else if(tmpbuffer[0] == '1' && tmpbuffer[1] == '0'){
-                        TEXT_INFO.attribute = TEXT_INFO.attribute & 0x0f; // we get rid of attribute's low bit
-                        TEXT_INFO.attribute = TEXT_INFO.attribute | ((tmpbuffer[2] - '0' + 8) << 4);
-                    }
-                    if(fstring[i] == 0 || fstring[i] == 'm'){
-                        break;
+// Format a string into a caller-provided buffer (uses format_string)
+void sprintf(char *output, const char *fstring, ...) {
+    va_list args;
+    va_start(args, fstring);
+    format_string(output, fstring, args);
+    va_end(args);
+}
+
+// Clear the screen
+void clrscr(void) {
+    _vgab_clear_screen();
+}
+
+// Print a formatted string with ANSI color support
+void cprintf(const char *fstring, ...) {
+    va_list args;
+    va_start(args, fstring);
+    format_string(buffer, fstring, args); // Use shared buffer
+    va_end(args);
+
+    // Process the formatted string with ANSI support
+    unsigned char current_color = _vgab_get_textcolor();
+    size_t i = 0;
+
+    while (buffer[i] != '\0') {
+        if (buffer[i] == '\033' || buffer[i] == '\x1b') {
+            if (buffer[i + 1] == '[') {
+                i += 2; // Skip "\033["
+                uint8_t fg = current_color & 0x0F;
+                uint8_t bg = (current_color >> 4) & 0x0F;
+                int num = 0;
+                bool valid = false;
+
+                while (buffer[i] != 'm' && buffer[i] != '\0') {
+                    if (buffer[i] >= '0' && buffer[i] <= '9') {
+                        num = num * 10 + (buffer[i] - '0');
+                        valid = true;
+                    } else if (buffer[i] == ';') {
+                        if (num >= 30 && num <= 37) fg = num - 30;
+                        else if (num >= 90 && num <= 97) fg = num - 90 + 8;
+                        else if (num >= 40 && num <= 47) bg = num - 40;
+                        else if (num >= 100 && num <= 107) bg = num - 100 + 8;
+                        num = 0;
                     }
                     i++;
                 }
+                if (valid && buffer[i] == 'm') {
+                    if (num >= 30 && num <= 37) fg = num - 30;
+                    else if (num >= 90 && num <= 97) fg = num - 90 + 8;
+                    else if (num >= 40 && num <= 47) bg = num - 40;
+                    else if (num >= 100 && num <= 107) bg = num - 100 + 8;
+                    _vgab_set_textcolor(fg, bg);
+                    i++; // Skip 'm'
+                    continue;
+                }
             }
-            break;
-        // default: // ignore the rest for now
-
+            i++; // Skip invalid escape and continue
         }
+        _vgab_put_char(buffer[i]);
+        i++;
     }
 }
 
+// Print a formatted string without ANSI color support
+void printf(const char *fstring, ...) {
+    va_list args;
+    va_start(args, fstring);
+    format_string(buffer, fstring, args); // Use shared buffer
+    va_end(args);
 
-void mclrscr(void)
-{
-    const uint16_t cleanerChar = TEXT_INFO.attribute << 8 | ' ';
-    for(int i=0;i<TEXT_INFO.screenheight * TEXT_INFO.screenwidth;i++){
-        vga_buffer[i] = cleanerChar;
-    }
+    // Directly write the formatted string
+    _vgab_write_string(buffer);
+}
+
+// Set and get text color
+void set_textcolor(uint8_t fg, uint8_t bg) {
+    _vgab_set_textcolor(fg, bg);
+}
+
+uint8_t get_textcolor(void) {
+    return _vgab_get_textcolor();
+}
+
+// Set and get foreground color
+void set_text_fg_color(uint8_t fg) {
+    uint8_t bg = (_vgab_get_textcolor() >> 4) & 0x0F;
+    _vgab_set_textcolor(fg, bg);
+}
+
+uint8_t get_text_fg_color(void) {
+    return _vgab_get_textcolor() & 0x0F;
+}
+
+// Set and get background color
+void set_text_bg_color(uint8_t bg) {
+    uint8_t fg = _vgab_get_textcolor() & 0x0F;
+    _vgab_set_textcolor(fg, bg);
+}
+
+uint8_t get_text_bg_color(void) {
+    return (_vgab_get_textcolor() >> 4) & 0x0F;
+}
+
+// Move cursor to (x, y)
+void gotoxy(uint8_t x, uint8_t y) {
+    _vgab_set_cursor(x, y);
 }
