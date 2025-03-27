@@ -3,44 +3,10 @@
 #include <stdint.h>
 
 #include <mconio.h>
+#include <mcursor.h>
 
-enum COLORS
-{
-  BLACK = 0,
-  BLUE = 1,
-  GREEN = 2,
-  CYAN = 3,
-  RED = 4,
-  MAGENTA = 5,
-  BROWN = 6,
-  LIGHTGRAY = 7,
-  DARKGRAY = 8,
-  LIGHTBLUE = 9,
-  LIGHTGREEN = 10,
-  LIGHTCYAN = 11,
-  LIGHTRED = 12,
-  LIGHTMAGENTA = 13,
-  YELLOW = 14,
-  WHITE = 15,
-  BLINK = 128
-};
 
-enum CURSORTYPE
-{
-  _NOCURSOR,//     turns off the cursor
-  _SOLIDCURSOR,//  solid block cursor
-  _NORMALCURSOR // normal underscore cursor
-};
-
-struct text_info
-{
-  unsigned char attribute;      /* text attribute */
-  unsigned char normattr;       /* normal attribute */
-  int screenheight;   /* text screen's height */
-  int screenwidth;    /* text screen's width */
-  int curx;           /* x-coordinate in current window */
-  int cury;           /* y-coordinate in current window */
-} TEXT_INFO = {
+struct text_info TEXT_INFO = {
     0x0f,
     0x0f,
     25,
@@ -49,9 +15,7 @@ struct text_info
     0
 };
 
-struct text_info_extended{
-    int tabsize;
-} TEXT_INFO_EXT = {
+struct text_info_extended TEXT_INFO_EXT = {
     8
 };
 
@@ -79,6 +43,7 @@ void _check_cursor_position()
 void _update_cursor()
 {
     _calculate_current_vga_index();
+    update_cursor(TEXT_INFO.curx, TEXT_INFO.cury);
 }
 
 void _handlebackslash()
