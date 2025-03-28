@@ -1,8 +1,9 @@
 /* Declare constants for the multiboot header. */
 .set ALIGN,    1<<0             /* align loaded modules on page boundaries */
 .set MEMINFO,  1<<1             /* provide memory map */
-.set FLAGS,    ALIGN | MEMINFO  /* this is the Multiboot 'flag' field */
+.set VIDEOMODE,  0<<2             /* provide video mode info */
 .set MAGIC,    0x1BADB002       /* 'magic number' lets bootloader find the header */
+.set FLAGS,    ALIGN | MEMINFO | VIDEOMODE  /* this is the Multiboot 'flag' field */
 .set CHECKSUM, -(MAGIC + FLAGS) /* checksum of above, to prove we are multiboot */
 
 /* 
@@ -13,11 +14,24 @@ search for this signature in the first 8 KiB of the kernel file, aligned at a
 forced to be within the first 8 KiB of the kernel file.
 */
 .section .multiboot
+.global multiboot_header
 .align 4
+multiboot_header:
 .long MAGIC
 .long FLAGS
 .long CHECKSUM
 
+/* Additional fields required if certain flags are set (not used here, so filled with zeros) 
+*/
+.long 0  /* Header address (not used in this simple example) */
+.long 0  /* Load address (not used) */
+.long 0  /* Load end address (not used) */
+.long 0  /* BSS end address (not used) */
+.long 0  /* Entry address (not used) */
+.long 0  /* Extra (not used) */
+.long 0  /* Extra (not used) */
+.long 0  /* Extra (not used) */
+.long 0  /* Extra (not used) */
 /*
 The multiboot standard does not define the value of the stack pointer register
 (esp) and it is up to the kernel to provide a stack. This allocates room for a
@@ -76,6 +90,14 @@ _start:
 	runtime support to work as well.
 	*/
 
+/*	call enable_a20 */
+/*	jc error_enabling_a20 */
+
+	/* call something_else */
+	/* jc error_something_else */
+
+
+
 	/*
 	Enter the high-level kernel. The ABI requires the stack is 16-byte
 	aligned at the time of the call instruction (which afterwards pushes
@@ -101,6 +123,9 @@ _start:
 	cli
 1:	hlt
 	jmp 1b
+
+.include "./etc/enable_a20.s"
+
 
 /*
 Set the size of the _start symbol to the current location '.' minus its start.
