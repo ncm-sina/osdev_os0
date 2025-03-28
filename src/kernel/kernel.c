@@ -32,6 +32,9 @@ typedef struct {
 
 extern MULTIBOOT_HEADER multiboot_header;
 
+// Declare the assembly function as extern
+extern int is_A20_on(void);
+
 // Static function to hide the cursor using port I/O
 static void _hide_cursor(void) {
     outb(0x3D4, 0x0A);
@@ -54,6 +57,10 @@ void kernel_main(void) {
     char c = '!';
     int negative = -123;
     unsigned int hex_val = 28; // 0x1c
+
+	int r = is_A20_on();
+
+	cprintf("a20 status[%d]: \n", r);
 
 	cprintf("multiboot_header[%s]: %#08x\n", "magic", multiboot_header.magic);
 	cprintf("multiboot_header[%s]: %#08x\n", "flags", multiboot_header.flags);

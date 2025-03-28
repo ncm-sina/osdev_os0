@@ -124,7 +124,7 @@ _start:
 1:	hlt
 	jmp 1b
 
-.include "./etc/enable_a20.s"
+.include "./etc/enable_a20_32.s"
 
 
 /*

@@ -28,9 +28,13 @@ all-build: ../dist/kernel/pre_kernel.o ../dist/kernel/kernel.o
 
 
 %.o: %.c
-	@echo "building c files"
+	@echo "-----------> building c (.c) files"
 	i686-elf-gcc $(CFLAGS) -I../include -c $< -o $@
 
-pre_kernel.o: pre_kernel.s
+%.o: %.s
+	@echo "===========> building assembly (.s) files"
 	i686-elf-as $< -o $@
+
+# pre_kernel.o: pre_kernel.s
+# 	i686-elf-as $< -o $@
 

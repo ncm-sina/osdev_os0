@@ -6,9 +6,10 @@ BufferOverMB:   .byte 0
 # Section for code
 .section .text
 .global get_a20_state
-.global query_a20_support
-.global enable_a20_keyboard_controller
+.global get_a20_state_32
 .global enable_a20
+
+get_a20_state_32:
 
 get_a20_state:
     pushf
